@@ -19,6 +19,7 @@ namespace TentaDatabas
         public static void PrintParkingLot()
         {
             Console.Clear();
+            Console.WriteLine("Spot     RegNmbr              VehicleType");
             connection.ConnectionString = connectionString;
             string parkinglot = "";
             using (connection)
@@ -34,7 +35,7 @@ namespace TentaDatabas
                     SqlDataReader reader = command.ExecuteReader();
                     while (reader.Read())
                     {
-                        parkinglot += string.Format("Plats {0,-3} {1,-20} {2} \n", (int)reader[0], (string)reader[1], (string)reader[2]);
+                        parkinglot += string.Format("{0,-8} {1,-20} {2} \n", (int)reader[0], (string)reader[1], (string)reader[2]);
                     }
                 }
                 catch
@@ -244,7 +245,7 @@ namespace TentaDatabas
                 }
                 catch
                 {
-
+                    Console.WriteLine("Couldnt fit your vehicle to desired spot, or spot was not in parkinglot. 1-100");
                 }
             }
         }
@@ -330,6 +331,79 @@ namespace TentaDatabas
             }
         }
         /// <summary>
+        /// Hittar totalpriset för ett specifict datum.
+        /// </summary>
+        public static void HistoryForSpecificDate()
+        {
+            Console.WriteLine("Type in date to see how much income the parkinglot had for that date. \n format yyyy-mm-dd");
+            string userInput = Console.ReadLine();
+            DateTime date = ConvertToDateTime(userInput);
+            string outPut = "";
+
+            connection.ConnectionString = connectionString;
+            using (connection)
+            {
+                SqlCommand command = new SqlCommand();
+                command.Connection = connection;
+                command.CommandText = "dbo.HistoryForSpecificDay";
+                command.CommandType = CommandType.StoredProcedure;
+                command.Parameters.AddWithValue("@Day", date);
+
+                try
+                {
+                    connection.Open();
+                    SqlDataReader reader = command.ExecuteReader();
+                    while (reader.Read())
+                    {
+                        outPut += string.Format("Date: {0} TotalEarnings: {1}", reader.GetDateTime(0), reader.GetValue(1));
+                    }
+                    Console.WriteLine(outPut);
+                }
+                catch
+                {
+                    Console.WriteLine("Couldnt find history");
+                }
+            }
+        }
+        public static void HistoryForTimeSpan()
+        {
+            Console.WriteLine("Type in startDate:");
+            string userStartDate = Console.ReadLine();
+            DateTime startTime = ConvertToDateTime(userStartDate);
+
+            Console.WriteLine("Type in endDate:");
+            string userEndDate = Console.ReadLine();
+            DateTime endTime = ConvertToDateTime(userEndDate);
+
+            string outPut = "";
+
+            connection.ConnectionString = connectionString;
+            using (connection)
+            {
+                SqlCommand command = new SqlCommand();
+                command.Connection = connection;
+                command.CommandText = "dbo.HistoryForTimeSpan";
+                command.CommandType = CommandType.StoredProcedure;
+                command.Parameters.AddWithValue("@startDate", userStartDate);
+                command.Parameters.AddWithValue("@endDate", userEndDate);
+
+                try
+                {
+                    connection.Open();
+                    SqlDataReader reader = command.ExecuteReader();
+                    while (reader.Read())
+                    {
+                        outPut += string.Format("Date: {0} TotalEarnings: {1} kr \n", reader.GetDateTime(0), (int)reader.GetDecimal(1));
+                    }
+                    Console.WriteLine(outPut);
+                }
+                catch
+                {
+
+                }
+            }
+        }
+        /// <summary>
         /// Skriver ut workorder för vad som skedde vi flytt av enskilt fordon eller optimering av parkeringen.
         /// </summary>
         public static void PrintWorkOrder()
@@ -355,6 +429,27 @@ namespace TentaDatabas
 
                 }
             }
+        }
+        /// <summary>
+        /// Konverterar till giltiligt datum att skicka in för jämförelser i databasen.
+        /// </summary>
+        /// <param name="userDate">datumet att converetera till datetime.</param>
+        /// <returns></returns>
+        public static DateTime ConvertToDateTime(string userDate)
+        {
+            string date = userDate;
+            DateTime time = new DateTime();
+            try
+            {
+                time = DateTime.Parse(date);
+            }
+            catch
+            {
+                Console.WriteLine("Invalid date, try again.");
+                Console.ReadKey();
+                MenuClass.MainMenu(); 
+            }
+            return time;
         }
     }
 }
